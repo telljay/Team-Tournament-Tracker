@@ -1,0 +1,36 @@
+<h4>
+    Edit Games
+</h4>
+<form action='/submit-edit?id={{Id}}' method ='post'>
+{{!home team}}
+<div>
+    <label for="">Home Team</label>
+    <h6>{{HomeTeam}}</h6>
+</div>
+{{!away team}}
+<div>
+    <label for="">Away Team</label>
+    <h6>{{AwayTeam}}</h6>
+</div>
+{{!home score}}
+<div class = "form-group">
+    <label for="homeScore">Home Score</label>
+    <input type="number" name="homeScore" id="homeScore">
+</div>
+{{!away score}}
+<div class = "form-group">
+    <label for="awayScore">Away Score</label>
+    <input type="number" name="awayScore" id="awayScore">
+</div>
+{{!game date and time}}
+<div>
+    <label for="">Game Date and Time</label>
+    <h6>{{Timestamp}}</h6>
+</div>
+{{!location}}
+<div>
+    <label for="">Location</label>
+    <h6>{{Location}}</h6>
+</div>
+<button type="submit" class="btn btn-primary">Submit</button>
+</form>

@@ -1,0 +1,48 @@
+<h4>
+    Add New Game
+</h4>
+<form action='/insert-game' method ='post'>
+{{!home team}}
+<div class = "form-group">
+    <label for="homeTeam">Home Team</label> 
+    <select class="form-control" name="homeTeam" id="homeTeam">
+        {{#each teams}}
+            <option value="{{Id}}">{{Name}}</option>
+        {{/each}}
+    </select>
+</div>
+{{!away team}}
+<div class = "form-group">
+    <label for="awayTeam">Away Team</label> 
+    <select class="form-control" name="awayTeam" id="awayTeam">
+        {{#each teams}}
+            <option value="{{Id}}">{{Name}}</option>
+        {{/each}}
+    </select>
+</div>
+{{!home score}}
+<div class = "form-group">
+    <label for="homeScore">Home Score</label>
+    <input type="number" name="homeScore" id="homeScore">
+</div>
+{{!away score}}
+<div class = "form-group">
+    <label for="awayScore">Away Score</label>
+    <input type="number" name="awayScore" id="awayScore">
+</div>
+{{!game date and time}}
+<div class = "form-group">
+    <label for="timeStamp">Game Date and Time</label>
+    <input type="datetime-local"  name="timeStamp" id="timeStamp" placeholder="YYYY-MM-DD HH:MM">
+</div>
+{{!location}}
+<div class = "form-group">
+    <label for="location">Location</label>
+    <select class ="form-control"name ="location" id="location">
+        {{#each locations}}
+            <option value="{{Id}}">{{Name}}</option>
+        {{/each}}
+    </select>
+</div>
+<button type="submit" class="btn btn-primary">Submit</button>
+</form>

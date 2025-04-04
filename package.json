@@ -1,0 +1,22 @@
+{
+  "dependencies": {
+    "body-parser": "^2.2.0",
+    "bootstrap": "^5.3.3",
+    "express": "^5.1.0",
+    "express-handlebars": "^8.0.1",
+    "handlebars": "^4.7.8",
+    "morgan": "^1.10.0",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7"
+  },
+  "name": "project5",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}
