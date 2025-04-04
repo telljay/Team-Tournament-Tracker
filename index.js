@@ -17,6 +17,8 @@ app.set('view engine', 'handlebars');
 app.use(morgan('dev')); 
 app.use(bodyParser.urlencoded({ extended: false })); 
 app.use(bodyParser.json()); 
+//--
+
 app.get('/search',async (req,res)=>{
     const searchQuery = req.query.query;
     const searchType = req.query.searchType;
@@ -75,6 +77,8 @@ app.post('/submit-edit',async (req,res)=>{
     await db.changeGameScore(gameId,homeScore,awayScore);
     res.redirect('/');
 })
+//--
+
 app.get('/newTeam',(req,res)=>{
     res.render('addTeam');
 })
@@ -112,7 +116,10 @@ app.post('/insert-game',async (req,res)=>{
     let timeStamp=req.body.timeStamp;
     let location=parseInt(req.body.location);
     if(homeTeam==awayTeam){
-        res.send("ERROR: HOME AND AWAY MUST BE DIFFERENT TEAMS")
+        res.render("err",{message:"ERROR: HOME AND AWAY MUST BE DIFFERENT TEAMS"})
+    }
+    if(!timeStamp){
+        res.render("err",{message:"ERROR: GAME MUST HAVE DATE AND TIME"})
     }
     else{
         await db.insertGame(timeStamp,homeTeam,awayTeam,location,homeScore,awayScore);
