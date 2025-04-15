@@ -1,30 +1,12 @@
-<nav class="navbar navbar-light bg-light">
-  <form class="form-inline" action="/search" method="GET">
-    <input class="form-control mr-sm-2" type="search" name ="query" placeholder="Case Sensitive Search" aria-label="Search">
-
-    <button class="btn btn-primary my-2 my-sm-0" type="submit">Search</button>
-</nav>
-<div class="form-check form-check-inline">
-  <input class="form-check-input" type="radio" name="searchType" id="Team" value="Team" checked>
-  <label class="form-check-label" for="Team">Team</label>
-</div>
-<div class="form-check form-check-inline">
-  <input class="form-check-input" type="radio" name="searchType" id="Date" value="Date">
-  <label class="form-check-label" for="Date">Date</label>
-</div>
-<div class="form-check form-check-inline">
-  <input class="form-check-input" type="radio" name="searchType" id="Location" value="Location">
-  <label class="form-check-label" for="Location">Location</label>
-</div>
-</form>
-
-<table class = "table table-hover">
+<h3>Admin Dashboard</h3>
+<table class="table table-hover">
     <thead>
-        <th>Date</th><th>Location</th><th>Home Team</th><th>Home Score</th><th>Away Team</th><th>Away Score</th><th>Edit</th>
-        {{#each everything}}
-            <tr>
-                <td class = "Date">{{Timestamp}}</td><td>{{Location}}</td><td>{{HomeTeam}}</td><td class = "text-center">{{HomeScore}}</td><td>{{AwayTeam}}</td><td class = "text-center">{{AwayScore}}</td><td><a href="/edit?id={{Id}}">Edit</a></td>
-            </tr>
-        {{/each}}
+        <th>Tournament Name</th><th>Start Date</th><th>End Date</th><th>Actions</th>
     </thead>
+    {{#each everything}}
+        <tr>
+            <td>{{Name}}</td><td>{{StartDate}}</td><td>{{EndDate}}</td><td><a class="btn btn-outline-success" href="/tournament/{{Id}}">View</a></td>
+        </tr>
+    {{/each}}
 </table>
+<a class="btn btn-primary" href="/newTournament">Add New Tournament</a>

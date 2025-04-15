@@ -27,7 +27,9 @@ class DBAbstraction {
             CREATE TABLE IF NOT EXISTS 'Teams' (
                 'Id' INTEGER,
                 'Name' TEXT,
-                PRIMARY KEY('Id')
+                'TournamentId' INTEGER,
+                PRIMARY KEY('Id'),
+                FOREIGN KEY('TournamentId') REFERENCES 'Tournaments'('Id')
             );
         `;
         const sqlLocations = `
@@ -46,17 +48,35 @@ class DBAbstraction {
                 'HomeTeam' INTEGER,
                 'AwayTeam' INTEGER,
                 'LocationId' INTEGER,
+                'TournamentId' INTEGER,
                 PRIMARY KEY('Id'),
                 FOREIGN KEY ('HomeTeam') REFERENCES 'Teams'('Id'),
                 FOREIGN KEY ('AwayTeam') REFERENCES 'Teams'('Id'),
-                FOREIGN KEY ('LocationId') REFERENCES 'Locations'('Id')
+                FOREIGN KEY ('LocationId') REFERENCES 'Locations'('Id'),
+                FOREIGN KEY ('TournamentId') REFERENCES 'Tournaments'('Id')
+
             );
         `;
+        const sqlUsers = `
+                CREATE TABLE IF NOT EXISTS 'Users' (
+                'Id' INTEGER PRIMARY KEY,
+                'Username' TEXT UNIQUE,
+                'HashedPassword' TEXT
+            );`
+        const sqlTournament = `
+                CREATE TABLE IF NOT EXISTS 'Tournaments'(
+                'Id' INTEGER PRIMARY KEY,
+                'Name' TEXT UNIQUE,
+                'StartDate' TEXT,
+                'EndDate' TEXT
+            );`
     
         return new Promise((resolve, reject) => {
             this.db.serialize(() => {
                 this.db.run(sqlTeams);
                 this.db.run(sqlLocations);
+                this.db.run(sqlUsers);
+                this.db.run(sqlTournament)
                 this.db.run(sqlGames, [], (err) => {
                     if (err) {
                         reject(new Error(`Error creating the tables: ${err.message}`));
@@ -69,10 +89,10 @@ class DBAbstraction {
     }
     //--
 
-    insertGame(timeStamp, homeTeam, awayTeam, location,homeScore, awayScore){
-        const sql = 'INSERT INTO Games (Timestamp, HomeScore, AwayScore,HomeTeam,AwayTeam,LocationId) VALUES (?,?,?,?,?,?)';
+    insertGame(timeStamp, homeTeam, awayTeam, location,homeScore, awayScore,tournamentId){
+        const sql = 'INSERT INTO Games (Timestamp, HomeScore, AwayScore,HomeTeam,AwayTeam,LocationId,TournamentId) VALUES (?,?,?,?,?,?,?)';
         return new Promise((resolve, reject)=>{
-            this.db.run(sql,[timeStamp, homeScore, awayScore, homeTeam, awayTeam, location],(err)=>{
+            this.db.run(sql,[timeStamp, homeScore, awayScore, homeTeam, awayTeam, location,tournamentId],(err)=>{
                 if(err){
                     reject(new Error(`Error inserting Game: ${err.message}`));
                 } else{
@@ -83,10 +103,10 @@ class DBAbstraction {
     }
     //--
 
-    insertTeam(teamName){
-        const sql = 'INSERT INTO Teams (Name) VALUES (?)'
+    insertTeam(teamName,tournamentId){
+        const sql = 'INSERT INTO Teams (Name,TournamentId) VALUES (?,?)'
         return new Promise((resolve, reject)=>{
-            this.db.run(sql, [teamName], (err)=>{
+            this.db.run(sql, [teamName,tournamentId], (err)=>{
                 if(err){
                     reject(new Error(`Error inserting Team: ${err.message}`));
                 }else{
@@ -105,6 +125,58 @@ class DBAbstraction {
                     reject(new Error(`Error inserting Location: ${err.message}`));
                 } else{
                     resolve();
+                }
+            })
+        })
+    }
+    //--
+
+    insertTournament(name, startDate,endDate){
+        const sql = `INSERT INTO Tournaments(Name,StartDate,EndDate) VALUES (?,?,?)`
+        return new Promise((resolve,reject)=>{
+            this.db.run(sql,[name,startDate,endDate],(err)=>{
+                if(err){
+                    reject(new Error(`Error inserting Tournament: ${err.message}`))
+                } else{
+                    resolve();
+                }
+            })
+        })
+    }
+    //--
+
+    getAllTournaments(){
+        const sql=`
+        SELECT *
+        FROM Tournaments`
+        return new Promise((resolve, reject)=>{
+            this.db.all(sql,(err,rows)=>{
+                if(err){
+                    reject(new Error(`Database error while collecting tournaments: ${err.message}`))
+                } else{
+                    let allData = [];
+                    rows.forEach(row =>{
+                        const startDate = new Date(row.StartDate);
+                        const friendlyStartDate = startDate.toLocaleDateString('en-US',{
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                        });
+                        const endDate = new Date(row.EndDate);
+                        const friendlyEndDate = endDate.toLocaleDateString('en-US',{
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                        });
+                        let data = {
+                            Id: row.Id,
+                            Name: row.Name,
+                            StartDate: friendlyStartDate,
+                            EndDate: friendlyEndDate
+                        };
+                        allData.push(data);
+                    })
+                    resolve(allData);
                 }
             })
         })
@@ -161,14 +233,15 @@ class DBAbstraction {
     }
     //--
 
-    getAllGameInformation(){
+    getAllGameInformation(tournamentId){
         const sql = `
         SELECT *
         FROM Games
+        WHERE TournamentId = ?
         ORDER BY Timestamp ASC;`
         let allData = [];
         return new Promise((resolve, reject)=>{
-            this.db.all(sql, async (err,rows)=>{
+            this.db.all(sql,[tournamentId], async (err,rows)=>{
                 if(err){
                     reject(new Error(`Error getting all information: ${err.message}`))
                 }
@@ -222,6 +295,45 @@ class DBAbstraction {
                     reject(new Error(`Error updating game score: ${err.message}`));
                 }else{
                     resolve();
+                }
+            })
+        })
+    }
+    //--
+
+    registerUser(username, hashedPassword) {
+        const sql = 'INSERT INTO Users (Username, HashedPassword) VALUES (?, ?)';
+        return new Promise((resolve, reject) => {
+            this.db.run(sql, [username, hashedPassword], (err) => {
+                if (err) reject(new Error(`Error registering user: ${err.message}`));
+                else resolve();
+            });
+        });
+    }
+    //--
+
+    getUserByUsername(username) {
+        const sql = 'SELECT Username, HashedPassword FROM Users WHERE Username = ?';
+        return new Promise((resolve, reject) => {
+            this.db.get(sql, [username], (err, row) => {
+                if (err) reject(err);
+                else resolve(row);
+            });
+        });
+    }
+    //--
+
+    getTournament(tournamentId){
+        const sql= `
+        SELECT * 
+        FROM Tournaments
+        WHERE Id = ?`
+        return new Promise((resolve,reject)=>{
+            this.db.get(sql,[tournamentId],(err,row)=>{
+                if(err){
+                    reject(new Error(`Error getting the tournament: ${tournamentId} because: ${err.message}`))
+                } else{
+                    resolve(row)
                 }
             })
         })

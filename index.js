@@ -5,6 +5,8 @@ const morgan = require('morgan');
 const path = require('path')
 const bodyParser = require("body-parser"); 
 const DBAbstraction = require('./DBAbstraction');
+const session = require('express-session');
+const bcrypt = require('bcrypt');
 const port = 53140;
 const db = new DBAbstraction(path.join(__dirname,'data','sports.sqlite'));
 
@@ -17,6 +19,55 @@ app.set('view engine', 'handlebars');
 app.use(morgan('dev')); 
 app.use(bodyParser.urlencoded({ extended: false })); 
 app.use(bodyParser.json()); 
+app.use(session({
+    secret: 'Carthage-Firebirds',
+    resave: false,
+    saveUninitialized: true
+}));
+//--
+
+app.get('/tournament/:id',async (req,res)=>{
+    const tournamentId = req.params.id;
+    let tournament = await db.getTournament(tournamentId);
+    let games = await db.getAllGameInformation(tournamentId);
+    res.render('tournamentHome',{games, user:req.session.user, tournament:tournament})
+});
+//--
+
+app.get('/login', async (req,res)=>{
+    res.render('login',{user:req.session.user});
+});
+//--
+
+app.post('/register', async (req, res) => {
+    const { username, password } = req.body;
+    const hashedPassword = await bcrypt.hash(password, 10);
+    try {
+        await db.registerUser(username, hashedPassword);
+        req.session.user = username;
+        res.redirect('/');
+    } catch (err) {
+        res.status(500).send(`Error adding new user: ${err}`);
+    }
+});
+
+app.post('/login', async (req, res) => {
+    const { username, password } = req.body;
+    const user = await db.getUserByUsername(username);
+    if (user && await bcrypt.compare(password, user.HashedPassword)) {
+        req.session.user = username;
+        res.redirect('/');
+    } else {
+        res.status(401).send("Invalid credentials.");
+    }
+});
+//--
+
+app.post('/logout', (req, res) => {
+    req.session.destroy(() => {
+        res.redirect('/');
+    });
+});
 //--
 
 app.get('/search',async (req,res)=>{
@@ -45,13 +96,13 @@ app.get('/search',async (req,res)=>{
         }
     }
     everything = newEverything;
-    res.render("home",{everything})
+    res.render("home",{everything, user:req.session.user})
 })
 //--
 
 app.get('/', async (req,res)=>{
-    let everything = await db.getAllGameInformation();
-    res.render('home', {everything});
+    let everything = await db.getAllTournaments();
+    res.render('home', {everything,user:req.session.user});
 })
 //--
 
@@ -65,8 +116,7 @@ app.get('/edit',async (req,res)=>{
             break;
         }
     }
-    console.log(gameInfo);
-    res.render('edit', gameInfo);
+    res.render('edit', {user:req.session.user, gameInfo});
 })
 //--
 
@@ -79,33 +129,57 @@ app.post('/submit-edit',async (req,res)=>{
 })
 //--
 
-app.get('/newTeam',(req,res)=>{
-    res.render('addTeam');
+app.get('/newTournament',(req,res)=>{
+    res.render('addTournament', {user: req.session.user})
+})
+//--
+
+app.post('/insert-tournament', async (req,res)=>{
+    let tournamentName = req.body.tournamentName;
+    let startTimestamp = req.body.start;
+    let endTimestamp = req.body.end;
+    console.log(`Inserting tournament: ${tournamentName} which is from ${startTimestamp}-${endTimestamp}`)
+    await db.insertTournament(tournamentName,startTimestamp,endTimestamp)
+    res.redirect('/')
+})
+//--
+
+app.get('/tournament/:id/newTeam',(req,res)=>{
+    const tournamentId = req.params.id;
+    res.render('addTeam', {user: req.session.user,Id:tournamentId});
 })
 //--
 
 app.post('/insert-team',async (req,res)=>{
     let teamName = req.body.teamName;
-    await db.insertTeam(teamName);
-    res.redirect("/"); 
+    let tournamentId = req.body.tournamentId;
+    await db.insertTeam(teamName,tournamentId);
+    res.redirect(`/tournament/${tournamentId}`); 
 })
 //--
 
-app.get('/newLocation',(req,res)=>{
-    res.render('addLocation')
+app.get('/tournament/:id/newLocation',(req,res)=>{
+    res.render('addLocation',{user:req.session.user, Id:req.params.id})
 })
 //--
 
 app.post('/insert-location',async (req,res)=>{
-    let locName = req.body.locName;
+    const locName = req.body.locName;
+    const tournamentId = req.body.tournamentId
+    if(locName == ""){
+        res.render("err")
+    }
+    console.log(locName);
     await db.insertLocation(locName);
-    res.redirect("/"); 
+    res.redirect(`/tournament/${tournamentId}`); 
 })
 //--
-app.get('/newGame',async (req,res)=>{
+app.get('/tournament/:id/newGame',async (req,res)=>{
     const teams = await db.getAllTeams();
     const locations = await db.getAllLocations();
-    res.render('addGame',{teams, locations})
+    const tournamentId = req.params.id;
+
+    res.render('addGame',{teams, locations, user:req.session.user,tournamentId:tournamentId})
 })
 //--
 app.post('/insert-game',async (req,res)=>{
@@ -115,6 +189,7 @@ app.post('/insert-game',async (req,res)=>{
     let awayScore=parseInt(req.body.awayScore);
     let timeStamp=req.body.timeStamp;
     let location=parseInt(req.body.location);
+    const tournamentId = req.body.tournamentId;
     if(homeTeam==awayTeam){
         res.render("err",{message:"ERROR: HOME AND AWAY MUST BE DIFFERENT TEAMS"})
     }
@@ -122,8 +197,8 @@ app.post('/insert-game',async (req,res)=>{
         res.render("err",{message:"ERROR: GAME MUST HAVE DATE AND TIME"})
     }
     else{
-        await db.insertGame(timeStamp,homeTeam,awayTeam,location,homeScore,awayScore);
-        res.redirect('/');
+        await db.insertGame(timeStamp,homeTeam,awayTeam,location,homeScore,awayScore,tournamentId);
+        res.redirect(`/tournament/${tournamentId}`);
     }
 })
 app.use((req, res) => { 

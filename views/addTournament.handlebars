@@ -1,0 +1,22 @@
+<h4>
+    Add New Tournament:
+</h4>
+{{#if user}}
+<form action='/insert-tournament' method ='post'>
+<div class = "form-group">
+    <label for="tournamentName">Tournament Name</label> 
+    <input type="text" class="form-control" name="tournamentName" id="tournamentName">
+</div>
+<div class = "form-group">
+    <label for="start">Game Date and Time</label>
+    <input type="date"  name="start" id="start" placeholder="YYYY-MM-DD">
+</div>
+<div class = "form-group">
+    <label for="end">Game Date and Time</label>
+    <input type="date"  name="end" id="end" placeholder="YYYY-MM-DD">
+</div>
+<button type="submit" class="btn btn-primary">Submit</button> 
+</form>
+{{else}}
+<h1>YOURE NOT ALLOWED TO ACCESS THIS</h1>
+{{/if}}

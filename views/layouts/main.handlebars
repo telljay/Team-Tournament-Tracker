@@ -16,7 +16,13 @@
 		 
 		<!-- common header --> 
 		<h1 class="display-5 text-center">Tournament Game Tracker</h1> 
-    <a class="btn btn-primary" href="/newTeam" role="button">Add Team</a>  <a class ="btn btn-primary" href="/newLocation">Add Location</a> <a class = "btn btn-primary" href="/newGame">Add Game</a>
+    {{#if user}}
+    <form action="/logout" method="post">
+      <button type="submit" class="btn btn-outline-success">Logout</button>
+    </form>
+    {{else}}
+      <a class="btn btn-outline-success" href="/login">Login</a>
+    {{/if}}
 		<hr/> 
  
 	    {{{body}}} 
