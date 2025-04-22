@@ -148,7 +148,8 @@ class DBAbstraction {
     getAllTournaments(){
         const sql=`
         SELECT *
-        FROM Tournaments`
+        FROM Tournaments
+        ORDER BY StartDate ASC`
         return new Promise((resolve, reject)=>{
             this.db.all(sql,(err,rows)=>{
                 if(err){
@@ -183,12 +184,13 @@ class DBAbstraction {
     }
     //--
 
-    getAllTeams(){
+    getAllTeams(tournamentId){
         const sql =`
         SELECT *
-        FROM Teams`
+        FROM Teams
+        WHERE TournamentId=?`
         return new Promise ((resolve, reject)=>{
-            this.db.all(sql,(err,rows)=>{
+            this.db.all(sql,[tournamentId],(err,rows)=>{
                 if(err){
                     reject(new Error(`Database error while collecting teams: ${err.message}`));
                 } else{
@@ -215,13 +217,14 @@ class DBAbstraction {
     }
     //--
 
-    getAllGames(){
+    getAllGames(tournamentId){
         const sql = `
         SELECT *
-        FROM Games;`;
+        FROM Games
+        WHERE TournamentId = ?;`;
         
         return new Promise((resolve, reject)=>{
-            this.db.all(sql,(err,rows)=>{
+            this.db.all(sql,[tournamentId],(err,rows)=>{
                 if(err){
                     reject(new Error(`Database error while collecting games: ${err.message}`));
                 } else{
@@ -252,7 +255,7 @@ class DBAbstraction {
                     for(let i = 0;i<allLoc.length;i++){
                         locMap.set(allLoc[i].Id, allLoc[i].Name);
                     }
-                    let allTeams=await this.getAllTeams();
+                    let allTeams=await this.getAllTeams(tournamentId);
                     for(let i = 0;i<allTeams.length;i++){
                         teamMap.set(allTeams[i].Id,allTeams[i].Name);
                     }
@@ -273,7 +276,8 @@ class DBAbstraction {
                             HomeTeam: teamMap.get(parseInt(row.HomeTeam)),
                             AwayTeam: teamMap.get(parseInt(row.AwayTeam)),
                             HomeScore: row.HomeScore,
-                            AwayScore: row.AwayScore
+                            AwayScore: row.AwayScore,
+                            TournamentId: row.TournamentId
                         }
                         allData.push(data);
                     });
@@ -333,7 +337,80 @@ class DBAbstraction {
                 if(err){
                     reject(new Error(`Error getting the tournament: ${tournamentId} because: ${err.message}`))
                 } else{
-                    resolve(row)
+                    const startDate = new Date(row.StartDate);
+                    const friendlyStartDate = startDate.toLocaleDateString('en-US',{
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    });
+                    const endDate = new Date(row.EndDate);
+                    const friendlyEndDate = endDate.toLocaleDateString('en-US',{
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    });
+                    let data = {
+                        Id: row.Id,
+                        Name: row.Name,
+                        StartDate: friendlyStartDate,
+                        EndDate: friendlyEndDate
+                    };
+                    resolve(data)
+                }
+            })
+        })
+    }
+    //--
+
+    deleteGame(gameId){
+        const sql = `
+        DELETE FROM Games
+        WHERE Id = ?`
+        return new Promise((resolve, reject)=>{
+            this.db.run(sql,[gameId],(err)=>{
+                if(err){
+                    reject(new Error(`Error deleting game: ${err.message}`))
+                } else{
+                    resolve()
+                }
+            })
+        })
+    }
+    //--
+    deleteTeam(teamId){
+        const sql = `
+        DELETE FROM Teams
+        WHERE Id = ?`
+        return new Promise((resolve, reject)=>{
+            this.db.run(sql,[teamId],(err)=>{
+                if(err){
+                    reject(new Error(`Error deleting game: ${err.message}`))
+                } else{
+                    resolve()
+                }
+            })
+        })
+    }
+    //--
+
+    async deleteTournament(tournamentId){
+        let games = await this.getAllGames(tournamentId);
+        let teams = await this.getAllTeams(tournamentId);
+        for(let i = 0;i<games.length;i++){
+            await this.deleteGame(games[i].Id);
+        }
+        for(let i = 0;i<teams.length;i++){
+            await this.deleteTeam(teams[i].Id);
+        }
+        const sql =`
+        DELETE FROM Tournaments
+        WHERE Id =?`
+        return new Promise((resolve,reject)=>{
+            this.db.run(sql,[tournamentId],(err)=>{
+                if(err){
+                    reject(new Error(`Error deleting the tournament: ${err.message}`))
+                } else{
+                    resolve();
                 }
             })
         })

@@ -26,11 +26,26 @@ app.use(session({
 }));
 //--
 
+app.get('/deleteTournament', async (req,res)=>{
+    const tournamentId = parseInt(req.query.id);
+    await db.deleteTournament(tournamentId);
+    res.redirect(`/`)
+})
+//--
+
+app.get('/deleteGame', async (req,res)=>{
+    const gameId = parseInt(req.query.id);
+    const tournamentId = parseInt(req.query.tournamentId);
+    await db.deleteGame(gameId);
+    res.redirect(`/tournament/${tournamentId}`)
+})
+//--
+
 app.get('/tournament/:id',async (req,res)=>{
     const tournamentId = req.params.id;
     let tournament = await db.getTournament(tournamentId);
     let games = await db.getAllGameInformation(tournamentId);
-    res.render('tournamentHome',{games, user:req.session.user, tournament:tournament})
+    res.render('tournamentHome',{games, user: req.session.user, tournament:tournament})
 });
 //--
 
@@ -71,9 +86,10 @@ app.post('/logout', (req, res) => {
 //--
 
 app.get('/search',async (req,res)=>{
+    const tournamentId = req.query.id;
     const searchQuery = req.query.query;
     const searchType = req.query.searchType;
-    let everything = await db.getAllGameInformation();
+    let everything = await db.getAllGameInformation(tournamentId);
     let newEverything =[];
     for(let i = 0;i<everything.length;i++){
         if(searchType == "Team"){
@@ -96,7 +112,7 @@ app.get('/search',async (req,res)=>{
         }
     }
     everything = newEverything;
-    res.render("home",{everything, user:req.session.user})
+    res.render("tournamentHome",{everything, user:req.session.user})
 })
 //--
 
@@ -107,7 +123,8 @@ app.get('/', async (req,res)=>{
 //--
 
 app.get('/edit',async (req,res)=>{
-    const allGameInfo = await db.getAllGameInformation();
+    const tournamentId = parseInt(req.query.tournamentId)
+    const allGameInfo = await db.getAllGameInformation(tournamentId);
     let gameInfo ={};
     const gameId = req.query.id;
     for(let i =0;i<allGameInfo.length;i++){
@@ -116,7 +133,8 @@ app.get('/edit',async (req,res)=>{
             break;
         }
     }
-    res.render('edit', {user:req.session.user, gameInfo});
+
+    res.render('edit', gameInfo);
 })
 //--
 
@@ -124,8 +142,9 @@ app.post('/submit-edit',async (req,res)=>{
     const gameId = req.query.id;
     const homeScore = req.body.homeScore;
     const awayScore = req.body.awayScore
+    const tournamentId = req.body.tournamentId;
     await db.changeGameScore(gameId,homeScore,awayScore);
-    res.redirect('/');
+    res.redirect(`/tournament/${tournamentId}`);
 })
 //--
 
@@ -175,10 +194,9 @@ app.post('/insert-location',async (req,res)=>{
 })
 //--
 app.get('/tournament/:id/newGame',async (req,res)=>{
-    const teams = await db.getAllTeams();
     const locations = await db.getAllLocations();
     const tournamentId = req.params.id;
-
+    const teams = await db.getAllTeams(tournamentId);
     res.render('addGame',{teams, locations, user:req.session.user,tournamentId:tournamentId})
 })
 //--

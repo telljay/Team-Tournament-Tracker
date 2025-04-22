@@ -3,13 +3,13 @@
   <h6>{{tournament.StartDate}} - {{tournament.EndDate}}</h6>
   {{#if user}}
     <a class="btn btn-primary" href="/tournament/{{tournament.Id}}/newTeam" role="button">Add Team</a>  <a class ="btn btn-primary" href="/tournament/{{tournament.Id}}/newLocation">Add Location</a> <a class = "btn btn-primary" href="/tournament/{{tournament.Id}}/newGame">Add Game</a>
+    <a class="btn btn-outline-danger" href="/deleteTournament?id={{tournament.Id}}">Delete Tournament</a>
   {{/if}}
 </div>
 
 <nav class="navbar navbar-light bg-light">
-  <form class="form-inline" action="/search" method="GET">
+  <form class="form-inline" action="/search?id={{tournament.Id}}&" method="GET">
     <input class="form-control mr-sm-2" type="search" name ="query" placeholder="Case Sensitive Search" aria-label="Search">
-
     <button class="btn btn-primary my-2 my-sm-0" type="submit">Search</button>
 </nav>
 <div class="form-check form-check-inline">
@@ -27,14 +27,34 @@
 </form>
 <table class = "table table-hover">
     <thead>
-        <th>Date</th><th>Location</th><th>Home Team</th><th>Home Score</th><th>Away Team</th><th>Away Score</th><th>Edit</th>
-    </thead>
-    {{#each everything}}
-      <tr>
-        <td class = "Date">{{Timestamp}}</td><td>{{Location}}</td><td>{{HomeTeam}}</td><td class = "text-center">{{HomeScore}}</td><td>{{AwayTeam}}</td><td class = "text-center">{{AwayScore}}</td>
-        {{#if user}}
-        <td><a href="/edit?id={{Id}}">Edit</a></td><td><a href="/delete?id={{Id}}">Delete</a></td>
+        <th>Date</th><th>Location</th><th>Home Team</th><th>Home Score</th><th>Away Team</th><th>Away Score</th>
+        {{#if user}}        
+        <th>Edit</th> <th>Delete</th>
         {{/if}}
+    </thead>
+    {{#if user}}
+      {{#each games}}
+        <tr>
+          <td class = "Date">{{Timestamp}}</td>
+          <td>{{Location}}</td>
+          <td>{{HomeTeam}}</td>
+          <td class = "text-center">{{HomeScore}}</td>
+          <td>{{AwayTeam}}</td>
+          <td class = "text-center">{{AwayScore}}</td>
+          <td><a class="btn btn-outline-success" href="/edit?id={{Id}}&tournamentId={{TournamentId}}">Edit</a></td>
+          <td><a class="btn btn-outline-success" href="/deleteGame?id={{Id}}&tournamentId={{TournamentId}}">Delete</a></td>
+        </tr>
+      {{/each}}
+    {{else}}
+      {{#each games}}
+      <tr>
+        <td class = "Date">{{Timestamp}}</td>
+        <td>{{Location}}</td>
+        <td>{{HomeTeam}}</td>
+        <td class = "text-center">{{HomeScore}}</td>
+        <td>{{AwayTeam}}</td>
+        <td class = "text-center">{{AwayScore}}</td>
       </tr>
-    {{/each}}
+      {{/each}}
+    {{/if}}
 </table>
